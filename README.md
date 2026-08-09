@@ -1,0 +1,1 @@
+# pixora-n8n-automation-internship
