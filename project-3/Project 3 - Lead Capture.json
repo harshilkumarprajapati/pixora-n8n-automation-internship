@@ -1,0 +1,498 @@
+{
+  "name": "Project 3 - Lead Capture",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-capture",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "641751e1-0c64-49dc-be7a-dfb045c46231",
+      "name": "Lead Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        208
+      ],
+      "webhookId": "58ff3970-d06c-4186-97bb-ab9d72ce0d36"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "has-email",
+              "leftValue": "={{ $json.body.email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "has-requirement",
+              "leftValue": "={{ $json.body.requirement }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "611d6261-e646-4ff4-b9d5-04f32dd155bf",
+      "name": "Has Email & Requirement",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "name",
+              "name": "Name",
+              "value": "={{ $json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "email",
+              "name": "Email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "phone",
+              "name": "Phone",
+              "value": "={{ $json.body.phone || \"\" }}",
+              "type": "string"
+            },
+            {
+              "id": "requirement",
+              "name": "Requirement",
+              "value": "={{ $json.body.requirement }}",
+              "type": "string"
+            },
+            {
+              "id": "status",
+              "name": "Status",
+              "value": "New",
+              "type": "string"
+            },
+            {
+              "id": "createdDate",
+              "name": "CreatedDate",
+              "value": "={{ $now.toFormat(\"yyyy-MM-dd\") }}",
+              "type": "string"
+            },
+            {
+              "id": "lastContact",
+              "name": "LastContact",
+              "value": "={{ $now.toFormat(\"yyyy-MM-dd\") }}",
+              "type": "string"
+            },
+            {
+              "id": "day0",
+              "name": "Day0",
+              "value": "Yes",
+              "type": "string"
+            },
+            {
+              "id": "day3",
+              "name": "Day3",
+              "value": "No",
+              "type": "string"
+            },
+            {
+              "id": "day5",
+              "name": "Day5",
+              "value": "No",
+              "type": "string"
+            },
+            {
+              "id": "converted",
+              "name": "Converted",
+              "value": "No",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "5236d551-2183-4a4d-9fac-b8c72a2e84fc",
+      "name": "Prepare Lead",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        448,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU",
+          "mode": "list",
+          "cachedResultName": "Pixora_Business_CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Field",
+              "displayName": "Field",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lead ID",
+              "displayName": "Lead ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Requirement",
+              "displayName": "Requirement",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Day 0",
+              "displayName": "Day 0",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Day 3",
+              "displayName": "Day 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Day 5",
+              "displayName": "Day 5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Contact",
+              "displayName": "Last Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Converted",
+              "displayName": "Converted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "e61d35bb-fac8-470b-b3a6-f8fca67373d3",
+      "name": "Append to CRM",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        672,
+        112
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "h5aZqD6OZ7t8Be9Y",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a friendly business development representative. Write a short, warm, personalized outreach email to a new lead based on their specific requirement. Do NOT use a generic template — reference their exact request.\n\nLead name: {{ $('Prepare Lead').item.json.Name }}\nTheir requirement: {{ $('Prepare Lead').item.json.Requirement }}\n\nGuidelines:\n- Greet the lead by their first name.\n- Reference their specific requirement in your own words.\n- Say we would be happy to help and can discuss the best approach.\n- Offer to schedule a quick discussion.\n- Keep it concise (3-5 short sentences), professional and warm.\n- Output only the email body text (no subject line, no placeholders).",
+        "batching": {}
+      },
+      "id": "81825d6c-65b1-41ba-803d-a70c0611a85e",
+      "name": "Generate Day 0 Message",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        896,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "10be50ae-56a9-41bd-a2f2-bfe2ab2e2fdb",
+      "name": "Gemini Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        976,
+        336
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "EzzQ0UicNqrOCIuE",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Prepare Lead').item.json.Email }}",
+        "subject": "=Re: your enquiry — {{ $('Prepare Lead').item.json.Requirement }}",
+        "emailType": "text",
+        "message": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "d7a0eeec-44c6-4b3e-80d5-b38527de769a",
+      "name": "Send Day 0 Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        112
+      ],
+      "webhookId": "06802c7b-287a-43ad-8a18-40fec8e3ddb4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "KDkctohUTaX0iVeK",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"ok\", \"message\": \"Lead captured and Day 0 message sent.\" } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "a110fabb-8447-40ca-b18e-412626afd475",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1472,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"status\": \"error\", \"message\": \"Missing required fields: email and requirement.\" } }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "fd46a136-f8df-4955-9140-6aab5acafafa",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        448,
+        304
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Lead Webhook": {
+      "main": [
+        [
+          {
+            "node": "Has Email & Requirement",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Email & Requirement": {
+      "main": [
+        [
+          {
+            "node": "Prepare Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Lead": {
+      "main": [
+        [
+          {
+            "node": "Append to CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append to CRM": {
+      "main": [
+        [
+          {
+            "node": "Generate Day 0 Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Day 0 Message": {
+      "main": [
+        [
+          {
+            "node": "Send Day 0 Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Day 0 Message",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Day 0 Email": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "97b384cc-b282-4120-96ca-a2c384250eab",
+  "meta": {
+    "instanceId": "355b1e6823ef5c209c3f9b885f6955a876199a75e418c6f43863767104998227"
+  },
+  "nodeGroups": [],
+  "id": "kxH7w3hSDoNVWEQo",
+  "tags": []
+}

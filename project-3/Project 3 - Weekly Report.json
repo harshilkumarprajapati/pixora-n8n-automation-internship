@@ -1,0 +1,146 @@
+{
+  "name": "Project 3 - Weekly Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "c7d66f67-659d-4c0f-991d-95a18e0a8212",
+      "name": "Every Monday 9AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU",
+          "mode": "list",
+          "cachedResultName": "Pixora_Business_CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "29520f47-b426-4674-93da-88a81a06bdc9",
+      "name": "Read CRM",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        0
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "h5aZqD6OZ7t8Be9Y",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n// Drop empty-json items (alwaysOutputData emits {} when the sheet is empty)\nconst rows = items.map(i => i.json || {}).filter(r => Object.keys(r).length > 0 && (r.Email || r.Name || r.Status));\n\nconst now = new Date();\nconst pad = (n) => String(n).padStart(2, \"0\");\nconst reportDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;\nconst weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);\n\nconst statuses = [\"New\", \"Contacted\", \"Converted\", \"Needs Human Response\", \"Lost\"];\nconst statusCounts = {};\nfor (const s of statuses) statusCounts[s] = 0;\n\nlet total = 0;\nlet newThisWeek = 0;\nlet day3Sent = 0;\nlet day5Sent = 0;\nlet converted = 0;\n\nconst yes = (v) => String(v).trim().toLowerCase() === \"yes\";\n\nfor (const r of rows) {\n  total++;\n  const st = String(r.Status || \"\").trim();\n  if (statusCounts[st] !== undefined) statusCounts[st]++;\n  const created = new Date(r.CreatedDate);\n  if (!isNaN(created.getTime()) && created >= weekAgo) newThisWeek++;\n  if (yes(r.Day3)) day3Sent++;\n  if (yes(r.Day5)) day5Sent++;\n  if (yes(r.Converted) || st === \"Converted\") converted++;\n}\n\nconst convRate = total > 0 ? ((converted / total) * 100).toFixed(1) : \"0.0\";\n\nconst statusRows = statuses\n  .map(s => `<tr><td style=\"padding:4px 12px;border:1px solid #ddd;\">${s}</td><td style=\"padding:4px 12px;border:1px solid #ddd;text-align:right;\">${statusCounts[s]}</td></tr>`)\n  .join(\"\");\n\nconst html = `<h2>Weekly Lead Report — ${reportDate}</h2>\n<p>Summary of CRM activity for the past week.</p>\n<ul>\n  <li><strong>Total leads:</strong> ${total}</li>\n  <li><strong>New leads this week:</strong> ${newThisWeek}</li>\n  <li><strong>Day 3 follow-ups sent:</strong> ${day3Sent}</li>\n  <li><strong>Day 5 follow-ups sent:</strong> ${day5Sent}</li>\n  <li><strong>Converted:</strong> ${converted} (${convRate}% conversion rate)</li>\n</ul>\n<h3>Leads by status</h3>\n<table style=\"border-collapse:collapse;\">\n  <tr><th style=\"padding:4px 12px;border:1px solid #ddd;text-align:left;\">Status</th><th style=\"padding:4px 12px;border:1px solid #ddd;\">Count</th></tr>\n  ${statusRows}\n</table>`;\n\nreturn [{ json: { reportDate, total, newThisWeek, day3Sent, day5Sent, converted, convRate, statusCounts, html } }];"
+      },
+      "id": "abc540b6-f256-4490-b1ac-122014bfd28a",
+      "name": "Build Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "<__PLACEHOLDER_VALUE__Business owner email address__>",
+        "subject": "=Weekly Lead Report — {{ $json.reportDate }}",
+        "message": "={{ $json.html }}",
+        "options": {}
+      },
+      "id": "8c5eddf0-db6c-46e0-a78b-a8e6569e9494",
+      "name": "Email Report",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        672,
+        0
+      ],
+      "webhookId": "a7748a7e-d2c7-4ca0-a143-1c10873e84cf",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "KDkctohUTaX0iVeK",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every Monday 9AM": {
+      "main": [
+        [
+          {
+            "node": "Read CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read CRM": {
+      "main": [
+        [
+          {
+            "node": "Build Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Report": {
+      "main": [
+        [
+          {
+            "node": "Email Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "94560f2a-d709-4d32-bca6-be35d9d1bd49",
+  "meta": {
+    "instanceId": "355b1e6823ef5c209c3f9b885f6955a876199a75e418c6f43863767104998227"
+  },
+  "nodeGroups": [],
+  "id": "w6wJ0jTSj4kQqCug",
+  "tags": []
+}

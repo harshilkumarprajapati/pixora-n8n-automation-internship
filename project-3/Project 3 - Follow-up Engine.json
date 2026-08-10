@@ -1,0 +1,693 @@
+{
+  "name": "Project 3 - Follow-up Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "e5c16117-5110-4116-bb52-1a58644568d5",
+      "name": "Daily 9AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU",
+          "mode": "list",
+          "cachedResultName": "Pixora_Business_CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU/edit#gid=0"
+        },
+        "options": {}
+      },
+      "id": "c92930a7-6c07-4119-8c2c-bfddd534df35",
+      "name": "Read CRM",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        304
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "h5aZqD6OZ7t8Be9Y",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rows = $input.all();\nconst pad = (n) => String(n).padStart(2, \"0\");\nconst now = new Date();\nconst todayDate = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;\nconst results = [];\nfor (const item of rows) {\n  const r = item.json || {};\n  if (!r.CreatedDate || !r.Email) continue;\n  if (String(r.Status).trim() !== \"New\") continue;\n  const created = new Date(r.CreatedDate);\n  if (isNaN(created.getTime())) continue;\n  const daysElapsed = Math.floor((now - created) / (1000 * 60 * 60 * 24));\n  const day3Done = String(r.Day3).trim().toLowerCase() === \"yes\";\n  const day5Done = String(r.Day5).trim().toLowerCase() === \"yes\";\n  const converted = String(r.Converted).trim().toLowerCase() === \"yes\";\n  let followupType = null;\n  if (daysElapsed >= 5 && !day5Done && !converted) {\n    followupType = \"day5\";\n  } else if (daysElapsed >= 3 && !day3Done) {\n    followupType = \"day3\";\n  }\n  if (!followupType) continue;\n  results.push({ json: { ...r, daysElapsed, followupType, todayDate } });\n}\nreturn results;"
+      },
+      "id": "6e502879-8699-4e09-a1d9-b3b50cf543dc",
+      "name": "Compute Follow-ups",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "is-day3",
+              "leftValue": "={{ $json.followupType }}",
+              "rightValue": "day3",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fbe6b747-782e-4714-b60a-43501439f8c1",
+      "name": "Is Day 3",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        672,
+        304
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a short, warm Day 3 follow-up email to a lead who has not yet responded. Reference their specific requirement — do not use a generic template.\n\nLead name: {{ $('Compute Follow-ups').item.json.Name }}\nTheir requirement: {{ $('Compute Follow-ups').item.json.Requirement }}\n\nGuidelines:\n- Greet the lead by first name.\n- Gently follow up regarding their specific requirement.\n- Offer to discuss the project and help plan next steps.\n- Invite them to let us know if they would like to continue.\n- Keep it to 3-4 short sentences, friendly and professional.\n- Output only the email body text.",
+        "batching": {}
+      },
+      "id": "e9da907b-6e83-4119-8091-e6899d34a5e1",
+      "name": "Generate Day 3 Message",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        896,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "825b7126-aa72-4ed6-ad30-093648cb6895",
+      "name": "Gemini Day 3",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        976,
+        224
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "EzzQ0UicNqrOCIuE",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Compute Follow-ups').item.json.Email }}",
+        "subject": "=Following up — {{ $('Compute Follow-ups').item.json.Requirement }}",
+        "emailType": "text",
+        "message": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "7f338f74-0833-4b84-93af-0b26d875b879",
+      "name": "Send Day 3 Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        112
+      ],
+      "webhookId": "8840fa4c-d6cd-4982-a3b6-c176f07ba629",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "KDkctohUTaX0iVeK",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU",
+          "mode": "list",
+          "cachedResultName": "Pixora_Business_CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Field",
+              "displayName": "Field",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lead ID",
+              "displayName": "Lead ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Requirement",
+              "displayName": "Requirement",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Day 0",
+              "displayName": "Day 0",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Day 3",
+              "displayName": "Day 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Day 5",
+              "displayName": "Day 5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Contact",
+              "displayName": "Last Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Converted",
+              "displayName": "Converted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "81b7b17c-3edf-422b-93f3-eb6e6b3df1ac",
+      "name": "Mark Day 3",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1472,
+        112
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "h5aZqD6OZ7t8Be9Y",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write a short, polite FINAL follow-up email to a lead who has not responded after earlier outreach. Reference their specific requirement — do not use a generic template.\n\nLead name: {{ $('Compute Follow-ups').item.json.Name }}\nTheir requirement: {{ $('Compute Follow-ups').item.json.Requirement }}\n\nGuidelines:\n- Greet the lead by first name.\n- Note this is a quick final follow-up regarding their specific requirement.\n- Say if they are still interested we would be happy to discuss whenever convenient.\n- Close warmly and thank them.\n- Keep it to 3-4 short sentences.\n- Output only the email body text.",
+        "batching": {}
+      },
+      "id": "f5091a8f-431d-463c-845b-108431d41598",
+      "name": "Generate Day 5 Message",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        896,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "6f861f23-1109-44a4-af49-9add63717991",
+      "name": "Gemini Day 5",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        976,
+        736
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "EzzQ0UicNqrOCIuE",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Compute Follow-ups').item.json.Email }}",
+        "subject": "=Final follow-up — {{ $('Compute Follow-ups').item.json.Requirement }}",
+        "emailType": "text",
+        "message": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "b199d46c-e43a-4728-a47a-d5cbe7b092f9",
+      "name": "Send Day 5 Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        512
+      ],
+      "webhookId": "0a4cb74b-48b3-49de-936f-d67b7e81ae47",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "KDkctohUTaX0iVeK",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU",
+          "mode": "list",
+          "cachedResultName": "Pixora_Business_CRM",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1NFaVqUI-MhP9q-s_eAfAcTgIUCZtMyBDOxBQP63w9GU/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Field",
+              "displayName": "Field",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lead ID",
+              "displayName": "Lead ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Requirement",
+              "displayName": "Requirement",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Day 0",
+              "displayName": "Day 0",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Day 3",
+              "displayName": "Day 3",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Day 5",
+              "displayName": "Day 5",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Contact",
+              "displayName": "Last Contact",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Converted",
+              "displayName": "Converted",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "8e2438f8-291a-4050-9d82-d286f87bbbdc",
+      "name": "Mark Day 5",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1472,
+        512
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "h5aZqD6OZ7t8Be9Y",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Daily 9AM": {
+      "main": [
+        [
+          {
+            "node": "Read CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read CRM": {
+      "main": [
+        [
+          {
+            "node": "Compute Follow-ups",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compute Follow-ups": {
+      "main": [
+        [
+          {
+            "node": "Is Day 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Day 3": {
+      "main": [
+        [
+          {
+            "node": "Generate Day 3 Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Day 5 Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Day 3 Message": {
+      "main": [
+        [
+          {
+            "node": "Send Day 3 Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Day 3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Day 3 Message",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Day 3 Email": {
+      "main": [
+        [
+          {
+            "node": "Mark Day 3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Day 5 Message": {
+      "main": [
+        [
+          {
+            "node": "Send Day 5 Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Day 5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generate Day 5 Message",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Day 5 Email": {
+      "main": [
+        [
+          {
+            "node": "Mark Day 5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "8c0b795e-ee33-485c-9064-b69e8fe2587b",
+  "meta": {
+    "instanceId": "355b1e6823ef5c209c3f9b885f6955a876199a75e418c6f43863767104998227"
+  },
+  "nodeGroups": [],
+  "id": "9Eh3qHuCH3jspKG6",
+  "tags": []
+}
